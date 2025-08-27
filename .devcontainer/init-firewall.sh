@@ -71,7 +71,7 @@ for domain in \
     "statsig.anthropic.com" \
     "statsig.com"; do
     echo "Resolving $domain..."
-    ips=$(dig +short A "$domain")
+    ips=$(dig +noall +answer A "$domain" | awk '$4 == "A" {print $5}')
     if [ -z "$ips" ]; then
         echo "ERROR: Failed to resolve $domain"
         exit 1
@@ -112,6 +112,9 @@ iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
 # Then allow only specific outbound traffic to allowed domains
 iptables -A OUTPUT -m set --match-set allowed-domains dst -j ACCEPT
+
+# Explicitly REJECT all other outbound traffic for immediate feedback
+iptables -A OUTPUT -j REJECT --reject-with icmp-admin-prohibited
 
 echo "Firewall configuration complete"
 echo "Verifying firewall rules..."
